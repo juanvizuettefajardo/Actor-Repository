@@ -2,6 +2,7 @@ package com.example.repository;
 
 import com.example.model.Actor;
 import com.example.utils.DatabaseConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,13 +51,17 @@ public class ActorRepository implements Repository<Actor> {
         String[] parts = actor.getNombre().split(" ", 2);
         String firstName = parts[0];
         String lastName = parts.length > 1 ? parts[1] : "";
-        String sql = "INSERT INTO actor (actor_id, first_name, last_name) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO actor (first_name, last_name) VALUES (?, ?)";
         try (Connection conn = DatabaseConnection.getInstance();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, actor.getId());
-            ps.setString(2, firstName);
-            ps.setString(3, lastName);
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, firstName);
+            ps.setString(2, lastName);
             ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    actor.setId(keys.getInt(1));
+                }
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -72,5 +77,26 @@ public class ActorRepository implements Repository<Actor> {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Actor insert(Actor actor) {
+        String[] parts = actor.getNombre().split(" ", 2);
+        String firstName = parts[0];
+        String lastName = parts.length > 1 ? parts[1] : "";
+        String sql = "INSERT INTO actor (first_name, last_name) VALUES (?, ?)";
+        try (Connection conn = DatabaseConnection.getInstance();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, firstName);
+            ps.setString(2, lastName);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    actor.setId(keys.getInt(1));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return actor;
     }
 }
